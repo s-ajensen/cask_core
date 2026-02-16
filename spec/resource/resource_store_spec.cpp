@@ -1,4 +1,5 @@
 #include <catch2/catch_all.hpp>
+#include <cask/resource/resource_handle.hpp>
 #include <cask/resource/resource_store.hpp>
 
 struct TestResource {
@@ -8,7 +9,7 @@ struct TestResource {
 SCENARIO("store returns a handle and get retrieves the data", "[resource_store]") {
     GIVEN("a resource store with a stored resource") {
         ResourceStore<TestResource> store;
-        uint32_t handle = store.store("test_asset", TestResource{42});
+        ResourceHandle<TestResource> handle = store.store("test_asset", TestResource{42});
 
         WHEN("the resource is retrieved by handle") {
             auto& resource = store.get(handle);
@@ -23,13 +24,13 @@ SCENARIO("store returns a handle and get retrieves the data", "[resource_store]"
 SCENARIO("storing the same key twice returns the same handle", "[resource_store]") {
     GIVEN("a resource store with a resource stored under a key") {
         ResourceStore<TestResource> store;
-        uint32_t first_handle = store.store("shared_asset", TestResource{100});
+        ResourceHandle<TestResource> first_handle = store.store("shared_asset", TestResource{100});
 
         WHEN("the same key is stored again with different data") {
-            uint32_t second_handle = store.store("shared_asset", TestResource{999});
+            ResourceHandle<TestResource> second_handle = store.store("shared_asset", TestResource{999});
 
             THEN("both calls return the same handle") {
-                REQUIRE(first_handle == second_handle);
+                REQUIRE(first_handle.value == second_handle.value);
             }
 
             THEN("get returns the first stored data") {

@@ -4,6 +4,10 @@
 #include <stdexcept>
 #include <vector>
 
+#include <cask/resource/resource_handle.hpp>
+
+using MeshHandle = ResourceHandle<struct MeshData>;
+
 struct MeshData {
 private:
     std::vector<float> positions_;

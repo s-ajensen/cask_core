@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cask/resource/resource_handle.hpp>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -10,18 +11,18 @@ struct ResourceStore {
     std::vector<Resource> resources_;
     std::unordered_map<std::string, uint32_t> key_to_handle_;
 
-    uint32_t store(const std::string& key, Resource data) {
+    ResourceHandle<Resource> store(const std::string& key, Resource data) {
         auto existing = key_to_handle_.find(key);
         if (existing != key_to_handle_.end()) {
-            return existing->second;
+            return ResourceHandle<Resource>{existing->second};
         }
-        uint32_t handle = resources_.size();
+        uint32_t raw_handle = resources_.size();
         resources_.push_back(data);
-        key_to_handle_[key] = handle;
-        return handle;
+        key_to_handle_[key] = raw_handle;
+        return ResourceHandle<Resource>{raw_handle};
     }
 
-    Resource& get(uint32_t handle) {
-        return resources_[handle];
+    Resource& get(ResourceHandle<Resource> handle) {
+        return resources_[handle.value];
     }
 };

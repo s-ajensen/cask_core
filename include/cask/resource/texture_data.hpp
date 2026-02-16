@@ -4,6 +4,10 @@
 #include <stdexcept>
 #include <vector>
 
+#include <cask/resource/resource_handle.hpp>
+
+using TextureHandle = ResourceHandle<struct TextureData>;
+
 struct TextureData {
 private:
     uint32_t width_;

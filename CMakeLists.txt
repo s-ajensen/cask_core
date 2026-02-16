@@ -38,6 +38,7 @@ add_executable(cask_core_tests
     spec/resource/resource_store_spec.cpp
     spec/resource/mesh_data_spec.cpp
     spec/resource/texture_data_spec.cpp
+    spec/resource/resource_handle_spec.cpp
 )
 target_link_libraries(cask_core_tests PRIVATE cask_core Catch2::Catch2WithMain)
 
