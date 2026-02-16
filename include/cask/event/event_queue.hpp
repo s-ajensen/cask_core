@@ -9,7 +9,7 @@ struct EventQueue {
     std::vector<Event> previous_;
 
     void emit(Event event) {
-        current_.push_back(event);
+        current_.push_back(std::move(event));
     }
 
     void swap() {

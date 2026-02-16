@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 template<typename Resource>
@@ -17,7 +18,7 @@ struct ResourceStore {
             return ResourceHandle<Resource>{existing->second};
         }
         uint32_t raw_handle = resources_.size();
-        resources_.push_back(data);
+        resources_.push_back(std::move(data));
         key_to_handle_[key] = raw_handle;
         return ResourceHandle<Resource>{raw_handle};
     }

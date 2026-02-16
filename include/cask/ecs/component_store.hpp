@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 template<typename Component>
@@ -12,7 +13,7 @@ struct ComponentStore {
 
     void insert(uint32_t entity, Component data) {
         size_t index = dense_.size();
-        dense_.push_back(data);
+        dense_.push_back(std::move(data));
         entity_to_index_[entity] = index;
         index_to_entity_[index] = entity;
     }
@@ -26,7 +27,7 @@ struct ComponentStore {
         size_t last_index = dense_.size() - 1;
         uint32_t last_entity = index_to_entity_[last_index];
 
-        dense_[removed_index] = dense_[last_index];
+        dense_[removed_index] = std::move(dense_[last_index]);
 
         entity_to_index_[last_entity] = removed_index;
         index_to_entity_[removed_index] = last_entity;
