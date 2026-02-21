@@ -3,36 +3,15 @@
 #include <cask/ecs/entity_table.hpp>
 #include <cask/identity/entity_registry.hpp>
 #include <cask/identity/uuid.hpp>
-#include <cask/schema/describe.hpp>
 #include <cask/schema/describe_component_store.hpp>
 #include <cask/schema/describe_entity_registry.hpp>
 #include <cask/schema/loader.hpp>
+#include "../support/schema_fixtures.hpp"
 
-namespace {
-
-struct Position {
-    float x;
-    float y;
-};
-
-cask::RegistryEntry position_entry() {
-    return cask::describe<Position>("Position", {
-        cask::field("x", &Position::x),
-        cask::field("y", &Position::y)
-    });
-}
-
-struct PhysicsConfig {
-    float gravity;
-};
-
-cask::RegistryEntry physics_config_entry() {
-    return cask::describe<PhysicsConfig>("PhysicsConfig", {
-        cask::field("gravity", &PhysicsConfig::gravity)
-    });
-}
-
-}
+using fixtures::PhysicsConfig;
+using fixtures::physics_config_entry;
+using fixtures::Position;
+using fixtures::position_entry;
 
 SCENARIO("loader deserializes components in dependency order", "[loader]") {
     GIVEN("an entity registry, component store, and serialized file data") {

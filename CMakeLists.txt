@@ -63,6 +63,7 @@ add_executable(cask_core_tests
     spec/schema/entity_registry_serialization_spec.cpp
     spec/schema/loader_spec.cpp
     spec/schema/saver_spec.cpp
+    spec/schema/bundle_spec.cpp
     spec/schema/cask_component_spec.cpp
 )
 target_link_libraries(cask_core_tests PRIVATE cask_core Catch2::Catch2WithMain)
