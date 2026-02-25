@@ -1,9 +1,9 @@
 #pragma once
 
+#include <cask/resource/resource_loader_registry.hpp>
 #include <cask/resource/resource_sources.hpp>
 #include <cask/resource/resource_store.hpp>
 #include <cask/schema/serialization_registry.hpp>
-#include <functional>
 #include <string>
 
 namespace cask {
@@ -14,8 +14,8 @@ SerializeFn build_resource_sources_serialize() {
         const auto* sources = static_cast<const ResourceSources<T>*>(instance);
         nlohmann::json result = nlohmann::json::object();
 
-        for (const auto& [key, path] : sources->entries) {
-            result[key] = path;
+        for (const auto& [key, loader_spec] : sources->entries) {
+            result[key] = loader_spec;
         }
 
         return result;
@@ -23,16 +23,17 @@ SerializeFn build_resource_sources_serialize() {
 }
 
 template<typename T>
-DeserializeFn build_resource_sources_deserialize(const std::string& registration_name, ResourceStore<T>& store, std::function<T(const std::string&)> loader) {
-    return [registration_name, &store, loader](const nlohmann::json& data, void* instance, const nlohmann::json&) -> nlohmann::json {
+DeserializeFn build_resource_sources_deserialize(const std::string& registration_name, ResourceStore<T>& store, ResourceLoaderRegistry<T>& registry) {
+    return [registration_name, &store, &registry](const nlohmann::json& data, void* instance, const nlohmann::json&) -> nlohmann::json {
         auto* sources = static_cast<ResourceSources<T>*>(instance);
         nlohmann::json remap = nlohmann::json::object();
 
-        for (const auto& [key, path_json] : data.items()) {
-            std::string path = path_json.get<std::string>();
-            T loaded = loader(path);
+        for (const auto& [key, entry_json] : data.items()) {
+            std::string loader_name = entry_json["loader"].get<std::string>();
+            const auto& loader = registry.get(loader_name);
+            T loaded = loader(entry_json);
             auto handle = store.store(key, std::move(loaded));
-            sources->entries[key] = path;
+            sources->entries[key] = entry_json;
             remap[key] = handle.value;
         }
 
@@ -41,7 +42,7 @@ DeserializeFn build_resource_sources_deserialize(const std::string& registration
 }
 
 template<typename T>
-RegistryEntry describe_resource_sources(const char* name, ResourceStore<T>& store, std::function<T(const std::string&)> loader) {
+RegistryEntry describe_resource_sources(const char* name, ResourceStore<T>& store, ResourceLoaderRegistry<T>& registry) {
     nlohmann::json schema = {
         {"name", name},
         {"type", "resource_sources"}
@@ -50,7 +51,7 @@ RegistryEntry describe_resource_sources(const char* name, ResourceStore<T>& stor
     return RegistryEntry{
         std::move(schema),
         build_resource_sources_serialize<T>(),
-        build_resource_sources_deserialize<T>(std::string(name), store, std::move(loader)),
+        build_resource_sources_deserialize<T>(std::string(name), store, registry),
         {}
     };
 }

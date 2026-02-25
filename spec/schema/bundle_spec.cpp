@@ -11,6 +11,7 @@
 #include <cask/schema/describe_entity_registry.hpp>
 #include <cask/schema/describe_resource_components.hpp>
 #include <cask/schema/describe_resource_sources.hpp>
+#include <cask/resource/resource_loader_registry.hpp>
 #include "../support/schema_fixtures.hpp"
 
 namespace {
@@ -362,16 +363,17 @@ SCENARIO("save_bundle then load_bundle round-trips resource component data", "[b
         auto floor_handle = resource_store.store("floor_mesh", FakeResource{99});
 
         ResourceSources<FakeResource> resource_sources;
-        resource_sources.entries["wall_mesh"] = "assets/wall.obj";
-        resource_sources.entries["floor_mesh"] = "assets/floor.obj";
+        resource_sources.entries["wall_mesh"] = {{"loader", "obj"}, {"path", "assets/wall.obj"}};
+        resource_sources.entries["floor_mesh"] = {{"loader", "obj"}, {"path", "assets/floor.obj"}};
 
         ComponentStore<ResourceHandle<FakeResource>> component_store;
         component_store.insert(entity_a, wall_handle);
         component_store.insert(entity_b, floor_handle);
 
+        cask::ResourceLoaderRegistry<FakeResource> save_loader_registry;
         auto reg_entry = cask::describe_entity_registry("EntityRegistry", table);
         auto sources_entry = cask::describe_resource_sources<FakeResource>(
-            "MeshSources", resource_store, [](const std::string&) { return FakeResource{0}; });
+            "MeshSources", resource_store, save_loader_registry);
         auto components_entry = cask::describe_resource_components<FakeResource>(
             "MeshComponents", "MeshSources", resource_store);
 
@@ -399,19 +401,18 @@ SCENARIO("save_bundle then load_bundle round-trips resource component data", "[b
             ComponentStore<ResourceHandle<FakeResource>> fresh_component_store;
 
             std::vector<std::string> loaded_paths;
-            std::function<FakeResource(const std::string&)> tracking_loader =
-                [&](const std::string& path) -> FakeResource {
-                    loaded_paths.push_back(path);
-                    int derived = 0;
-                    for (char character : path) {
-                        derived += static_cast<int>(character);
-                    }
-                    return FakeResource{derived};
-                };
+            cask::ResourceLoaderRegistry<FakeResource> fresh_loader_registry;
+            fresh_loader_registry.add("obj", [&loaded_paths](const nlohmann::json& entry_json) -> FakeResource {
+                std::string path = entry_json["path"].get<std::string>();
+                loaded_paths.push_back(path);
+                int derived = 0;
+                for (char character : path) { derived += static_cast<int>(character); }
+                return FakeResource{derived};
+            });
 
             auto fresh_reg_entry = cask::describe_entity_registry("EntityRegistry", fresh_table);
             auto fresh_sources_entry = cask::describe_resource_sources<FakeResource>(
-                "MeshSources", fresh_resource_store, tracking_loader);
+                "MeshSources", fresh_resource_store, fresh_loader_registry);
             auto fresh_components_entry = cask::describe_resource_components<FakeResource>(
                 "MeshComponents", "MeshSources", fresh_resource_store);
 
