@@ -12,6 +12,10 @@ namespace cask {
 using SerializeFn = std::function<nlohmann::json(const void*)>;
 using DeserializeFn = std::function<nlohmann::json(const nlohmann::json&, void*, const nlohmann::json&)>;
 
+inline std::string resource_remap_key(const std::string& name) {
+    return "resource_remap_" + name;
+}
+
 struct RegistryEntry {
     nlohmann::json schema;
     SerializeFn serialize;

@@ -3,10 +3,21 @@
 #include <cask/ecs/entity_table.hpp>
 #include <cask/identity/entity_registry.hpp>
 #include <cask/identity/uuid.hpp>
+#include <cask/resource/resource_handle.hpp>
+#include <cask/resource/resource_sources.hpp>
+#include <cask/resource/resource_store.hpp>
 #include <cask/schema/bundle.hpp>
 #include <cask/schema/describe_component_store.hpp>
 #include <cask/schema/describe_entity_registry.hpp>
+#include <cask/schema/describe_resource_components.hpp>
+#include <cask/schema/describe_resource_sources.hpp>
 #include "../support/schema_fixtures.hpp"
+
+namespace {
+struct FakeResource {
+    int data;
+};
+}
 
 using fixtures::PhysicsConfig;
 using fixtures::physics_config_entry;
@@ -331,6 +342,139 @@ SCENARIO("save_bundle then load_bundle round-trips component data", "[bundle]") 
                 REQUIRE(loaded_plugins.size() == 2);
                 REQUIRE(loaded_plugins[0] == "alpha");
                 REQUIRE(loaded_plugins[1] == "beta");
+            }
+        }
+    }
+}
+
+SCENARIO("save_bundle then load_bundle round-trips resource component data", "[bundle]") {
+    GIVEN("entities linked to resources via component store") {
+        EntityTable table;
+        EntityRegistry entity_registry;
+
+        auto uuid_a = cask::generate_uuid();
+        auto uuid_b = cask::generate_uuid();
+        uint32_t entity_a = entity_registry.resolve(uuid_a, table);
+        uint32_t entity_b = entity_registry.resolve(uuid_b, table);
+
+        ResourceStore<FakeResource> resource_store;
+        auto wall_handle = resource_store.store("wall_mesh", FakeResource{42});
+        auto floor_handle = resource_store.store("floor_mesh", FakeResource{99});
+
+        ResourceSources<FakeResource> resource_sources;
+        resource_sources.entries["wall_mesh"] = "assets/wall.obj";
+        resource_sources.entries["floor_mesh"] = "assets/floor.obj";
+
+        ComponentStore<ResourceHandle<FakeResource>> component_store;
+        component_store.insert(entity_a, wall_handle);
+        component_store.insert(entity_b, floor_handle);
+
+        auto reg_entry = cask::describe_entity_registry("EntityRegistry", table);
+        auto sources_entry = cask::describe_resource_sources<FakeResource>(
+            "MeshSources", resource_store, [](const std::string&) { return FakeResource{0}; });
+        auto components_entry = cask::describe_resource_components<FakeResource>(
+            "MeshComponents", "MeshSources", resource_store);
+
+        cask::SerializationRegistry save_registry;
+        save_registry.add("EntityRegistry", reg_entry);
+        save_registry.add("MeshSources", sources_entry);
+        save_registry.add("MeshComponents", components_entry);
+
+        cask::ComponentResolver save_resolver = [&](const std::string& name) -> void* {
+            if (name == "EntityRegistry") return &entity_registry;
+            if (name == "MeshSources") return &resource_sources;
+            if (name == "MeshComponents") return &component_store;
+            return nullptr;
+        };
+
+        std::vector<std::string> component_names = {"EntityRegistry", "MeshSources", "MeshComponents"};
+
+        WHEN("save_bundle then load_bundle is called on the result") {
+            auto bundle_data = cask::save_bundle({"mesh_plugin"}, component_names, save_registry, save_resolver);
+
+            EntityTable fresh_table;
+            EntityRegistry fresh_registry;
+            ResourceStore<FakeResource> fresh_resource_store;
+            ResourceSources<FakeResource> fresh_sources;
+            ComponentStore<ResourceHandle<FakeResource>> fresh_component_store;
+
+            std::vector<std::string> loaded_paths;
+            std::function<FakeResource(const std::string&)> tracking_loader =
+                [&](const std::string& path) -> FakeResource {
+                    loaded_paths.push_back(path);
+                    int derived = 0;
+                    for (char character : path) {
+                        derived += static_cast<int>(character);
+                    }
+                    return FakeResource{derived};
+                };
+
+            auto fresh_reg_entry = cask::describe_entity_registry("EntityRegistry", fresh_table);
+            auto fresh_sources_entry = cask::describe_resource_sources<FakeResource>(
+                "MeshSources", fresh_resource_store, tracking_loader);
+            auto fresh_components_entry = cask::describe_resource_components<FakeResource>(
+                "MeshComponents", "MeshSources", fresh_resource_store);
+
+            cask::SerializationRegistry load_registry;
+            load_registry.add("EntityRegistry", fresh_reg_entry);
+            load_registry.add("MeshSources", fresh_sources_entry);
+            load_registry.add("MeshComponents", fresh_components_entry);
+
+            cask::ComponentResolver load_resolver = [&](const std::string& name) -> void* {
+                if (name == "EntityRegistry") return &fresh_registry;
+                if (name == "MeshSources") return &fresh_sources;
+                if (name == "MeshComponents") return &fresh_component_store;
+                return nullptr;
+            };
+
+            cask::PluginLoader plugin_loader = [](const std::string&) {};
+
+            cask::load_bundle(bundle_data, load_registry, plugin_loader, load_resolver);
+
+            THEN("the fresh registry has the same two UUIDs") {
+                REQUIRE(fresh_registry.size() == 2);
+            }
+
+            THEN("the loader was called with the correct paths") {
+                REQUIRE(loaded_paths.size() == 2);
+                bool has_wall = std::find(loaded_paths.begin(), loaded_paths.end(), "assets/wall.obj") != loaded_paths.end();
+                bool has_floor = std::find(loaded_paths.begin(), loaded_paths.end(), "assets/floor.obj") != loaded_paths.end();
+                REQUIRE(has_wall);
+                REQUIRE(has_floor);
+            }
+
+            THEN("the resource store has the loaded data") {
+                auto fresh_wall_handle = ResourceHandle<FakeResource>{fresh_resource_store.key_to_handle_.at("wall_mesh")};
+                auto fresh_floor_handle = ResourceHandle<FakeResource>{fresh_resource_store.key_to_handle_.at("floor_mesh")};
+
+                int wall_data = fresh_resource_store.get(fresh_wall_handle).data;
+                int floor_data = fresh_resource_store.get(fresh_floor_handle).data;
+
+                int expected_wall = 0;
+                for (char character : std::string("assets/wall.obj")) {
+                    expected_wall += static_cast<int>(character);
+                }
+                int expected_floor = 0;
+                for (char character : std::string("assets/floor.obj")) {
+                    expected_floor += static_cast<int>(character);
+                }
+
+                REQUIRE(wall_data == expected_wall);
+                REQUIRE(floor_data == expected_floor);
+            }
+
+            THEN("the component store links remapped entities to remapped resource handles") {
+                uint32_t new_a = fresh_registry.resolve(uuid_a, fresh_table);
+                uint32_t new_b = fresh_registry.resolve(uuid_b, fresh_table);
+
+                REQUIRE(fresh_component_store.has(new_a));
+                REQUIRE(fresh_component_store.has(new_b));
+
+                auto handle_a = fresh_component_store.get(new_a);
+                auto handle_b = fresh_component_store.get(new_b);
+
+                REQUIRE(fresh_resource_store.key(handle_a) == "wall_mesh");
+                REQUIRE(fresh_resource_store.key(handle_b) == "floor_mesh");
             }
         }
     }

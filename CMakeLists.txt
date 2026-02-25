@@ -61,6 +61,8 @@ add_executable(cask_core_tests
     spec/schema/describe_spec.cpp
     spec/schema/component_store_serialization_spec.cpp
     spec/schema/entity_registry_serialization_spec.cpp
+    spec/schema/resource_sources_serialization_spec.cpp
+    spec/schema/resource_components_serialization_spec.cpp
     spec/schema/loader_spec.cpp
     spec/schema/saver_spec.cpp
     spec/schema/bundle_spec.cpp
