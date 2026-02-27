@@ -55,6 +55,7 @@ add_executable(cask_core_tests
     spec/resource/texture_data_spec.cpp
     spec/resource/resource_handle_spec.cpp
     spec/resource/resource_loader_registry_spec.cpp
+    spec/resource/resource_descriptor_spec.cpp
     spec/identity/uuid_spec.cpp
     spec/identity/entity_registry_spec.cpp
     spec/schema/type_name_spec.cpp

@@ -1,0 +1,97 @@
+{
+  "components": {
+    "EntityRegistry": {
+      "1c96d9e0-01e9-44c0-8c6f-8149fc176a3a": 6,
+      "28be5cfd-5d38-4c4a-81cb-25714fa9d335": 5,
+      "58a13352-b7d5-404e-aaa1-5b87881d52fa": 0,
+      "611d355d-c698-4504-be61-c73af9d43ded": 1,
+      "7f50519a-73bc-460e-a244-a3ac53d1f88d": 7,
+      "8fe98a01-3fbe-4fbc-80be-69b4d5f22897": 2,
+      "a660c37a-dce8-4ecd-8fd3-d930622fc945": 3,
+      "e78219d8-27e5-48e0-ba91-96e6825b34d2": 4
+    },
+    "MeshComponents": {
+      "0": "utah_teapot",
+      "1": "utah_teapot",
+      "2": "utah_teapot",
+      "3": "utah_teapot",
+      "4": "utah_teapot",
+      "5": "utah_teapot",
+      "6": "utah_teapot",
+      "7": "utah_teapot"
+    },
+    "MeshSources": {
+      "utah_teapot": {
+        "loader": "test_obj",
+        "path": "meshes/teapot.obj"
+      }
+    },
+    "TransformComponents": {
+      "0": {
+        "pos_x": 10.0,
+        "pos_y": 0.0,
+        "pos_z": 0.0,
+        "rot_y": 0.0,
+        "scale": 1.0
+      },
+      "1": {
+        "pos_x": 7.071067810058594,
+        "pos_y": 0.0,
+        "pos_z": 7.071067810058594,
+        "rot_y": 0.7853981852531433,
+        "scale": 1.0
+      },
+      "2": {
+        "pos_x": -4.37113897078234e-07,
+        "pos_y": 0.0,
+        "pos_z": 10.0,
+        "rot_y": 1.5707963705062866,
+        "scale": 1.0
+      },
+      "3": {
+        "pos_x": -7.071067810058594,
+        "pos_y": 0.0,
+        "pos_z": 7.071067810058594,
+        "rot_y": 2.356194496154785,
+        "scale": 1.0
+      },
+      "4": {
+        "pos_x": -10.0,
+        "pos_y": 0.0,
+        "pos_z": -8.74227794156468e-07,
+        "rot_y": 3.1415927410125732,
+        "scale": 1.0
+      },
+      "5": {
+        "pos_x": -7.071066379547119,
+        "pos_y": 0.0,
+        "pos_z": -7.07106876373291,
+        "rot_y": 3.9269909858703613,
+        "scale": 1.0
+      },
+      "6": {
+        "pos_x": 1.1924880993774423e-07,
+        "pos_y": 0.0,
+        "pos_z": -10.0,
+        "rot_y": 4.71238899230957,
+        "scale": 1.0
+      },
+      "7": {
+        "pos_x": 7.071070194244385,
+        "pos_y": 0.0,
+        "pos_z": -7.071065425872803,
+        "rot_y": 5.4977874755859375,
+        "scale": 1.0
+      }
+    }
+  },
+  "dependencies": {
+    "MeshComponents": [
+      "EntityRegistry",
+      "MeshSources"
+    ],
+    "TransformComponents": [
+      "EntityRegistry"
+    ]
+  }
+}
